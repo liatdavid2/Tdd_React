@@ -1,5 +1,5 @@
 import React from 'react'
-import {render, cleanup, fireEvent} from '@testing-library/react'
+import {render, cleanup, fireEvent, waitForElement} from '@testing-library/react'
 import '@testing-library/jest-dom/extend-expect'
 
 import UserSignupPage from './UserSignupPage'
@@ -116,6 +116,43 @@ describe('UserSignupPage',()=>{
             setupForSubmit()
             expect(()=>fireEvent.click(button).not.toThrow())
         })
+
+        it('displays validation error for name when error is recived for the field', async()=>{
+            const actions = {
+                postSignup:jest.fn().mockRejectedValue({
+                    response:{
+                        data:{
+                            validationErrors:{
+                                Name:'Cannot be null'
+                            }
+                        }
+                    }
+                })
+            }
+            const{queryByText} = setupForSubmit({actions})
+            fireEvent.click(button)
+
+            const errorMessage = await waitForElement(()=>queryByText('Cannot be null'))
+            expect(errorMessage).toBeInTheDocument();
+        })
+        it('enables the signup button when password and repeat password have same value', ()=>{
+            setupForSubmit()
+            expect(button).not.toBeDisabled()
+        })
+        it('disables the signup button when repeat password does not match password', ()=>{
+            setupForSubmit()
+            fireEvent.change(repeatPasswordInput,changeEvent('Ppaa12347'))
+
+            expect(button).toBeDisabled()
+        })
+
+        it('display error on password repeat when mismatched', ()=>{
+            const {queryByText} = setupForSubmit()
+            fireEvent.change(repeatPasswordInput,changeEvent('Ppaa12347'))
+            const mismatchedWarning = queryByText('Password repeat does not match to password')
+            expect(mismatchedWarning).toBeInTheDocument()
+        })
+
     })
 
 })
